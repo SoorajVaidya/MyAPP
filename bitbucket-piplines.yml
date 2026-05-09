@@ -1,0 +1,52 @@
+#For Direct Deployment
+image: atlassian/default-image:latest
+
+pipelines:
+  branches:
+    new_report4:   
+      - step:
+          name: Build and Deploy
+          caches:
+            - docker
+          services:
+            - docker
+          script:
+            - export IMAGE_NAME=nadiswara_pro
+            - export EC2_USER=ubuntu
+            - export EC2_HOST=13.202.135.108
+
+            # Build Docker image from the Django application files
+            - docker build -t $IMAGE_NAME .
+
+            # Tag the Docker image with a unique identifier
+            - export IMAGE_TAG=$IMAGE_NAME:$(date +%Y%m%d%H%M%S)
+            - docker tag $IMAGE_NAME soorajgv/$IMAGE_TAG
+
+            # Login to Docker Hub directly in script (replace with your password)
+            - echo "Sooraj@docker" | docker login -u "soorajgv" --password-stdin
+
+            # Push the Docker image to Docker Hub
+            - docker push soorajgv/$IMAGE_TAG
+
+            # Deploy to EC2 instance via SSH using Bitbucket's default key
+            - pipe: atlassian/ssh-run:0.4.0
+              variables:
+                SSH_USER: $EC2_USER
+                SERVER: $EC2_HOST
+                COMMAND: |
+                  # Pull the latest image
+                  sudo docker pull soorajgv/$IMAGE_TAG
+                  
+                  # Stop and remove the previous container, if it exists
+                  sudo docker stop $IMAGE_NAME || true
+                  sudo docker rm $IMAGE_NAME || true
+                  
+                  # Run the new container
+                  sudo docker run -d --name $IMAGE_NAME -p 8000:8000 soorajgv/$IMAGE_TAG
+                  
+                  # Remove all but the latest 2 images to save space
+                  images_to_remove=$(sudo docker images -q | uniq | tail -n +3)
+                  if [ -n "$images_to_remove" ]; then
+                    sudo docker rmi $images_to_remove || true
+                  fi
+

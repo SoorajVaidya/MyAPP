@@ -1,0 +1,60 @@
+{"base_min": {
+  	"Wind_AA1_Time": 0.155,
+  	"Wind_angle": 25,
+
+    "Humidity_C1D_Time": 0.012,
+    "Humidity_C1D_Area": 0.0007,
+    "Humidity_angle": 12.1743,
+
+  	"Cold_BC_Time": 0.048,
+	"Humid_Ratio_Cold": 0.647233333333333,
+
+
+  	"Cold_AC_Time": 0.19,
+  	"Heat_CE_Ampli": 0.0,
+	"Heat_Area": 0.005,
+  	"Heat_AE_Ampli": 0.3,
+
+	"Heart_BC_Time": 0.048,
+	"Heart_CE_Ampli": 0.15,
+
+	"Heat_BC_Time": 0.262,
+	"Heat_DE_Ampli": 0.25,
+	"Humidity_CD_Ampli":0.00,
+
+
+  	"Dryness spike (F-A11)": 0.15,
+  	"Dryness delay": 0.25,
+  	"Cycle_Time": 0.17},
+
+
+ "base_max": {
+
+  	"Wind_AA1_Time": 0.054,
+  	"Wind_angle": 4.4541,
+
+  	"Humidity_C1D_Time": 0.1848,
+    "Humidity_C1D_Area": 0.1423,
+  	"Humidity_angle": 82.7373,
+
+
+	"Cold_BC_Time": 0.362,
+	"Humid_Ratio_Cold": 0.07752,
+
+
+  	"Cold_AC_Time": 0.111,
+  	"Heat_CE_Ampli": 0.18,
+  	"Heat_Area": 0.0,
+	"Heat_AE_Ampli":0.0,
+
+	"Heart_BC_Time": 0.262,
+	"Heart_CE_Ampli": 0.45,
+
+	"Heat_BC_Time": 0.16,
+	"Heat_DE_Ampli": 0.00,
+	"Humidity_CD_Ampli":0.45,
+
+
+  	"Dryness spike (F-A11)": 0.45,
+  	"Dryness delay": 0.85,
+  	"Cycle_Time": 0.8946999999999997}}

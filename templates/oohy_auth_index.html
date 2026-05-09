@@ -1,0 +1,22 @@
+<html>
+<head>
+    <style>
+        img {
+            max-width: 100%; /* Adjust image size */
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Diagnosis Report</h1>
+    {% for field in field_data %}
+        <p><strong>{{ field.name }}:</strong>
+        {% if field.is_image %}
+            <img src="{{ field.value }}" alt="{{ field.name }}" />
+        {% else %}
+            {{ field.value }}
+        {% endif %}
+        </p>
+    {% endfor %}
+</body>
+</html>

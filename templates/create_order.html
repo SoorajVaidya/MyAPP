@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Payment Order</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+
+<body>
+
+    <h1>Make a Payment</h1>
+
+    <!-- Wallet Balance -->
+    <div id="wallet-balance-container">
+        <p>Wallet Balance: <span id="wallet-balance">Loading...</span> INR</p>
+    </div>
+
+    <!-- Input fields for Amount and Auth Token -->
+    <form id="payment-form">
+        <label for="amount">Amount (INR):</label>
+        <input type="number" id="amount" name="amount" step="0.01" required>
+        <br><br>
+
+        <label for="auth_token">Auth Token:</label>
+        <input type="text" id="auth_token" name="auth_token" required>
+        <br><br>
+
+        <input type="hidden" id="user_id" value="2"> <!-- Replace with actual user ID -->
+
+        <button type="button" id="rzp-button1">Pay</button>
+    </form>
+
+    <script>
+        const walletBalanceSpan = document.getElementById('wallet-balance');
+
+        // Fetch wallet balance
+        function fetchWalletBalance(authToken) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/v1/pulse_payments/wallet/balance/', true);
+            xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    walletBalanceSpan.textContent = response.wallet_balance.toFixed(2);
+                } else {
+                    walletBalanceSpan.textContent = 'Error fetching balance';
+                }
+            };
+
+            xhr.send();
+        }
+
+        document.getElementById('rzp-button1').onclick = function (e) {
+            e.preventDefault();
+
+            const amount = parseFloat(document.getElementById('amount').value);
+            const authToken = document.getElementById('auth_token').value;
+            const userId = document.getElementById('user_id').value;
+
+            if (!authToken) {
+                alert("Auth token is required.");
+                return;
+            }
+
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid amount.");
+                return;
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/v1/pulse_payments/payment/create-order/', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+
+                    const options = {
+                        "key": response.key,
+                        "amount": response.amount, // in paise
+                        "currency": "INR",
+                        "name": "Nadiswara",
+                        "description": "Wallet Recharge",
+                        "order_id": response.order_id,
+                        "handler": function (razorpay_response) {
+                            alert("✅ Payment successful! Your wallet will be updated shortly.");
+
+                            // Optional: wait for webhook to hit and refresh balance
+                            setTimeout(() => {
+                                fetchWalletBalance(authToken);
+                            }, 4000);
+                        },
+                        "notes": {
+                            "user_id": userId
+                        },
+                        "theme": {
+                            "color": "#3399cc"
+                        }
+                    };
+
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+                } else {
+                    alert("❌ Failed to create payment order.");
+                }
+            };
+
+            const data = JSON.stringify({
+                amount: amount,
+                auth_token: authToken,
+                user_id: userId
+            });
+
+            xhr.send(data);
+        };
+
+        // Fetch balance on load if auth token is prefilled
+        document.addEventListener('DOMContentLoaded', function () {
+            const authToken = document.getElementById('auth_token').value;
+            if (authToken) {
+                fetchWalletBalance(authToken);
+            }
+        });
+    </script>
+
+</body>
+
+</html>

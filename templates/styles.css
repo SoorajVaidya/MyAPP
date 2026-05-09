@@ -1,0 +1,28 @@
+.section-meta {
+    background-color: #e9e9e9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.meta-box {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.meta-box p {
+    margin: 5px 0;
+    font-size: 16px;
+    white-space: nowrap; /* Prevents line breaks */
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .meta-box {
+        flex-direction: column;
+    }
+}

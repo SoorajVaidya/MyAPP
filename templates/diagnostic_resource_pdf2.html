@@ -1,0 +1,588 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" xmlns:pdf="http://www.xhtml2pdf.com/pdf">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+
+            font-family: 'NotoSansDevanagari', sans-serif;
+            margin: 20px;
+            padding: 0;
+            color: #333;
+            line-height: 1.8;
+        }
+
+        @page {
+            size: A4;
+            margin: 4mm 8mm;
+            /* Reserve space for header if needed */
+            border: 1px solid black;
+            /* Thin border around each page */
+            border-radius: 50px;
+            padding-top: 10px;
+
+        }
+
+        .end-of-page {
+            display: flex;
+            justify-content: space-between;
+            /* Pushes items to the far left and right */
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            /* Line above the container */
+        }
+
+
+        .separator {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+
+        .spacer {
+            flex-grow: 10;
+        }
+
+
+        .header {
+            width: 100%;
+            text-align: right;
+            padding: 5px 10px;
+        }
+
+        .content {
+            padding: 0 10px;
+        }
+
+
+
+        body h2 {
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+            padding-top: 15px !important;
+            padding-bottom: -15px !important;
+            /* Ensure bottom padding is reduced */
+            margin-top: 10px !important;
+            margin-bottom: 0px !important;
+            /* Reduce bottom margin */
+            font-size: 28px;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .section-meta {
+            display: flex;
+            justify-content: flex-start;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+
+        .section-meta p {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .h3-wrapper {
+            margin-top: 10px !important;
+            width: fit-content;
+            /* Shrink background to fit content */
+            background: #9f3a95;
+            /* Background color remains the same */
+            padding: 5px 5px 2px;
+            border-radius: 8px;
+            /* Adjust border radius */
+            /* margin: 15px 0 10px 20px; Adjust margins */
+
+
+        }
+
+        .h3-wrapper h3 {
+            margin-top: 30px !important;
+            padding-top: 30px !important;
+            font-size: 1.8em;
+            /* Decrease font size */
+            padding: 5px 15px;
+            /* Reduce inner padding */
+            margin: 0;
+            /* Remove extra margin */
+            font-weight: bold;
+
+        }
+
+
+        h3 {
+
+            display: inline-block;
+            /* Ensures only text is styled, not full width */
+            color: white;
+            font-size: 2.5em;
+            /* Increase font size */
+            font-weight: bold;
+            padding: 20px 40px;
+            /* More padding for better spacing */
+            margin-left: 40px;
+            /* Ensures text is not touching the left edge */
+            border-radius: 10px;
+            margin-top: 15px !important;
+            /* Adjust this value as needed */
+        }
+
+        h4 {
+            font-size: 20px;
+            margin: 2px !important;
+            padding: 0 !important;
+            border: none !important;
+
+        }
+
+
+
+        p {
+            font-size: 12px;
+            text-align: justify;
+            margin: 5px 0;
+            padding-top: 10px !important;
+            /* Adjust this value as needed */
+        }
+
+        img {
+            display: block;
+            margin: 0 auto;
+            /* Centers the image */
+            text-align: center;
+        }
+
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+
+        h2 {
+            padding-top: 40px !important;
+            /* Adjust this value as needed */
+        }
+
+        .no-page-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: always;
+        }
+
+        br::after {
+            content: "\A\A";
+            white-space: pre;
+        }
+
+        @font-face {
+            font-family: 'NotoSansDevanagari';
+            src: url('/static/fonts/NotoSansDevanagari-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+
+  
+
+
+
+    {% for section in sections %}
+
+    <!-- <h2>{{ section.section_name }}</h2> -->
+
+
+
+
+
+    {% for content in section.content %}
+
+
+    <div>
+
+
+        {% if content.title == "Acupressure Report" %}
+
+        {% include "header_snippet.html" %}
+
+
+        <div class="h3-wrapper">
+            <h3>Acupressure Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 550px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Acupressure Notes" %}
+
+        <p>{{ content.value }}</p>
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 70px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+        <div class="page-break"></div>
+
+
+
+
+
+
+        {% elif content.title == "Single Seed Report" %}
+
+        {% include "header_snippet.html" %}
+
+
+
+        <div class="h3-wrapper">
+            <h3>Single Seed Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 600px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Single Seed Notes" %}
+
+        <p>{{ content.value }}</p>
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 70px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+        <div class="page-break"></div>
+
+
+
+
+        {% elif content.title == "Colour Report" %}
+
+        {% include "header_snippet.html" %}
+
+        <div class="h3-wrapper">
+            <h3>Colour Therapy Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 600px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Colour Notes" %}
+
+        <p>{{ content.value }}</p>
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 70px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+
+        <div class="page-break"></div>
+
+
+
+
+
+        {% elif content.title == "Auricular Report" %}
+
+        {% include "header_snippet.html" %}
+
+
+        <div class="h3-wrapper">
+            <h3>Auricular Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 430px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Auricular Notes" %}
+
+        <p>{{ content.value }}</p>
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 10px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+        <div class="page-break"></div>
+
+
+        {% elif content.title == "Seed Therapy Report" %}
+
+        {% include "header_snippet.html" %}
+
+
+        <div class="h3-wrapper">
+            <h3>Seed Therapy Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 600px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Seed Therapy Notes" %}
+
+        <p>{{ content.value }}</p>
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 70px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+        <!-- <div class="page-break"></div> -->
+
+
+
+        {% elif content.title == "Mudra Report 1" %}
+
+        {% include "header_snippet.html" %}
+
+        <div class="h3-wrapper">
+            <h3>Mudra Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Mudra Report 2" %}
+
+        <!-- {% include "header_snippet.html" %} -->
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+
+
+        {% elif content.title == "Mudra Report 3" %}
+
+        {% include "header_snippet.html" %}
+
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Mudra Notes" %}
+
+        <p>{{ content.value }}</p>
+
+        <!-- 
+
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 450px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+        <!-- <div class="page-break"></div> -->
+
+
+        {% elif content.title == "Yoga Report 1" %}
+
+
+        {% include "header_snippet.html" %}
+        <div class="h3-wrapper">
+            <h3>Yoga Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Yoga Report 2" %}
+        <!-- 
+            {% include "header_snippet.html" %} -->
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+        {% elif content.title == "Yoga Report 3" %}
+
+
+
+
+
+        {% include "header_snippet.html" %}
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Yoga Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 450px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+        <!-- <div class="page-break"></div> -->
+
+        {% elif content.title == "Pranayama Report 1" %}
+
+
+
+        {% include "header_snippet.html" %}
+
+        <div class="h3-wrapper">
+            <h3>Pranayama Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Pranayama Report 2" %}
+
+        <!-- {% include "header_snippet.html" %} -->
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+        {% elif content.title == "Pranayama Report 3" %}
+
+
+
+        {% include "header_snippet.html" %}
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Pranayama Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+        <!-- 
+            <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 450px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+
+
+
+
+
+        {% else %}
+        <h3>{{ content.title }}</h3>
+        <p>{{ content.value }}</p>
+        {% endif %}
+
+
+
+        {% endfor %}
+        {% endfor %}
+
+</body>
+
+</html>

@@ -1,0 +1,3 @@
+Treatment Note: fhgvb
+Base Image 1 URL: treatment_images/auricular_0edzdii.jpg
+Base Image 2 URL: 

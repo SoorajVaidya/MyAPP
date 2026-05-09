@@ -1,0 +1,22 @@
+
+.env
+
+**/__pycache__/
+**/__pycache__/*
+
+# Ignore __pycache__ specifically in the pulse_service and authentication directories
+authentication/migrations/__pycache__/*
+authentication/__pycache__/*
+oohy_product/__pycache__/*
+pulse_data/__pycache__/*
+pulse_service/__pycache__/*
+user_profile/__pycache__/*
+pulse_payments/__pycache__/*
+all_context.json
+AWSCLIV2.pkg
+.venv/
+*.log
+
+staticfiles/
+
+.idea/

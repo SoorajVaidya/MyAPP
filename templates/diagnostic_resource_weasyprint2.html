@@ -1,0 +1,1175 @@
+{% load static %}
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnosis Report</title>
+    <style>
+        body {
+
+            font-family: 'NotoSansDevanagari', sans-serif;
+            margin: 20px;
+            padding: 0;
+            color: #333;
+            line-height: 1.8;
+        }
+
+        @page {
+            size: A4;
+            margin: 16mm 2mm 11mm 2mm;
+            /* Reserve space for header if needed */
+            border: 1px solid black;
+            /* Thin border around each page */
+            border-radius: 20px;
+            padding-top: 10px;
+
+            /* @bottom-center {
+                content: "Page " counter(page);
+                font-size: 12px;
+                color: #333;
+            } */
+
+            @bottom-right {
+                padding-top: 15px;
+                content: "© 2025 Basava Pracheena Vaidya Anveshana Pvt Ltd. All rights reserved.";
+                font-size: 10px;
+                color: #333;
+            }
+
+        }
+
+        .educational-note {
+            page-break-before: always;
+            /* forces it onto a new page */
+            text-align: center;
+            font-size: 14px;
+            font-style: italic;
+            margin-top: 100px;
+        }
+
+
+        .absolute-top-bar {
+            position: fixed;
+            top: -72px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4mm 8mm;
+            /* padding around the text/image */
+            z-index: 9999;
+        }
+
+        .healer-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .header-img img {
+            width: 250px;
+            /* increase/decrease image size */
+            height: auto;
+            display: block;
+        }
+
+        .educational-note-box {
+            border: 1px solid #9f3a95;
+            border-radius: 6px;
+            background-color: #f9f1f9;
+            padding: 12px 16px;
+            margin-top: 20px;
+            font-size: 13px;
+            font-style: italic;
+            color: #333;
+        }
+
+
+        .pdf-header {
+            position: fixed;
+            top: 4mm;
+            /* push it down just under the border */
+            left: 8mm;
+            /* align with left page margin */
+            right: 8mm;
+            /* align with right page margin */
+            height: 20mm;
+            /* reserve roughly header height */
+        }
+
+        .pdf-header img {
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 20mm;
+            /* or width="100" on the tag—either works */
+            width: auto;
+        }
+
+
+
+
+        .footer {
+            position: fixed;
+            bottom: -27px;
+            /* positions it just above the very bottom edge */
+            left: 8mm;
+            /* align with your left margin */
+            right: 8mm;
+            /* align with your right margin */
+            /* height will auto‑adjust to table content */
+        }
+
+        .fixed-header {
+            position: fixed;
+            top: 4mm;
+            right: 8mm;
+            width: 100px;
+            height: auto;
+            z-index: 1000;
+        }
+
+        .fixed-header img {
+            width: 100px;
+            height: auto;
+            display: block;
+        }
+
+
+        .end-of-page {
+            display: flex;
+            justify-content: space-between;
+            /* Pushes items to the far left and right */
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            /* Line above the container */
+        }
+
+
+        .separator {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+
+        .spacer {
+            flex-grow: 10;
+        }
+
+
+        .header {
+            width: 100%;
+            text-align: right;
+            padding: 5px 10px;
+        }
+
+        .content {
+            padding: 0 10px;
+        }
+
+
+
+        body h2 {
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+            padding-top: 1px !important;
+            padding-bottom: -15px !important;
+            /* Ensure bottom padding is reduced */
+            margin-top: 1px !important;
+            margin-bottom: 0px !important;
+            /* Reduce bottom margin */
+            font-size: 28px;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .section-meta {
+            display: flex;
+            justify-content: flex-start;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+
+        .section-meta p {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .h3-wrapper {
+            margin-top: 1px !important;
+            width: fit-content;
+            /* Shrink background to fit content */
+            background: linear-gradient(to right, #9f3a95 0%, white 50%);
+            /* Background color remains the same */
+            /* padding: 5px 5px 2px; */
+            border-radius: 2px;
+            /* Adjust border radius */
+            /* margin: 15px 0 10px 20px; Adjust margins */
+
+
+        }
+
+        .h3-wrapper h3 {
+            margin-top: 0px !important;
+            padding-top: 0px !important;
+            font-size: 1em;
+            /* Decrease font size */
+            padding: 2px 5px;
+            /* Reduce inner padding */
+            margin: 0;
+            /* Remove extra margin */
+            font-weight: bold;
+
+        }
+
+
+        h3 {
+
+            display: inline-block;
+            /* Ensures only text is styled, not full width */
+            color: white;
+            font-size: 2.5em;
+            /* Increase font size */
+            font-weight: bold;
+            padding: 20px 40px;
+            /* More padding for better spacing */
+            margin-left: 40px;
+            /* Ensures text is not touching the left edge */
+            border-radius: 10px;
+            margin-top: 15px !important;
+            /* Adjust this value as needed */
+        }
+
+        h4 {
+            font-size: 20px;
+            margin: 2px !important;
+            padding: 0 !important;
+            border: none !important;
+
+        }
+
+
+
+
+
+        p {
+            font-size: 12px;
+            text-align: justify;
+            margin: 5px 0;
+            padding-top: 10px !important;
+            /* Adjust this value as needed */
+        }
+
+        img {
+            display: block;
+            margin: 0 auto;
+            /* Centers the image */
+            text-align: center;
+        }
+
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+
+        h2 {
+            padding-top: 40px !important;
+            /* Adjust this value as needed */
+        }
+
+        .no-page-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: always;
+        }
+
+        /* br::after {
+            content: "\A\A";
+            white-space: pre;
+        } */
+
+        @font-face {
+            font-family: 'NotoSansDevanagari';
+            src: url('/static/fonts/NotoSansDevanagari-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        .educational-note-inline {
+            text-align: left;
+            font-size: 13px;
+            font-style: italic;
+            margin-top: 20px;
+            color: #444;
+        }
+
+
+        .absolute-header {
+            position: fixed;
+            top: -40px;
+            right: 0;
+            width: 120px;
+            height: auto;
+            z-index: 9999;
+        }
+
+        .absolute-header img {
+            width: 120px;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header for first page -->
+    <!-- {% include "header_snippet.html" %} -->
+
+    <!-- <div class="absolute-header">
+        <img src="https://naadiswara.s3.ap-south-1.amazonaws.com/Header+image/header.png" alt="Header Image">
+    </div> -->
+
+
+
+
+
+    {% for section in sections %}
+
+
+    {% if section.section_metadata.user_name %}
+    <div class="h3-wrapper">
+        <h3>Healer Details</h3>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 0px; margin-bottom: 10px;">
+        <tr>
+            <!-- First Column: User Name -->
+            <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+                <p style="margin: 5px 0; font-size: 16px; line-height: 1.2;">
+                    <strong>Name:</strong> {{ section.section_metadata.user_name }}
+                </p>
+
+            </td>
+
+            <!-- Second Column: Mobile -->
+            <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+                <p style="margin: 5px 0; font-size: 16px; line-height: 1.2;">
+                    <strong>Mobile:</strong> {{ section.section_metadata.user_number }}
+                </p>
+
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+
+
+
+
+
+    {% for content in section.content %}
+    {# Skip unwanted titles #}
+    <!-- ✅ Skip pattern_number and pattern_name using 'if not' -->
+    {% if content.title != "pattern_number" and content.title != "pattern_name" and content.title != "id"%}
+
+    <div>
+
+        {% if content.title == "pulse_explanation" %}
+        <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+
+
+        {% elif content.title == "pulse_pdf_icon_1" %}
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; vertical-align: top; text-align: center;">
+
+
+                    {% elif content.title == "pulse_pdf_icon_2" %}
+                </td>
+                <td style="width: 50%; vertical-align: top; text-align: center;">
+
+                </td>
+            </tr>
+        </table>
+
+        {% elif content.title == "language" %}
+
+
+        {% elif content.title == "pulse_pdf_image" %}
+        <div class="h3-wrapper">
+            <h3 style="margin-bottom: 2px;">Pulse </h3>
+        </div>
+        <img src="{{ content.value }}" alt="Pulse Image"
+            style="width: 720px; height: auto; display: block; margin-top: 0; padding-top: 10px;">
+
+
+        {% elif content.title == "heart_rate" %}
+        <!-- <div style="display: flex; align-items: center;">
+                <h4 style="margin: 0; font-size: 17px; display: inline-block;">Heart Rate:</h4>
+                <p style="margin: 0; padding-left: 5px; display: inline-block;"><strong>{{ content.value }}</strong> BPM
+                </p>
+            </div> -->
+
+        <!-- <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 45px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer>
+ -->
+
+
+
+        <div class="page-break"></div>
+        <!-- {% include "header_snippet.html" %} -->
+
+        {% elif content.title == "tridosha_pdf_graph"%}
+
+        <div class="h3-wrapper" style="position: relative">
+            <h3 style="margin-bottom: 2px; ">Tridosha Analysis</h3>
+        </div>
+
+        <img src="{{ content.value }}" alt="Tridosha Graph" style="width: 500px; height: auto;">
+
+
+        {% elif content.title == "tridosha_pdf_icon_1"%}
+
+        {% elif content.title == "tridosha_pdf_sloka_icon_1" %}
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 80%; vertical-align: top; padding-right: 10px;">
+
+                    <img src="{{ content.value }}"
+                        style="width: 500px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "tridosha_text_1" %}
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+                    {% elif content.title == "tridosha_pdf_sloka_icon_2" %}
+                    <img src="{{ content.value }}"
+                        style="width: 500px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "tridosha_text_2" %}
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+                </td>
+                <td style="width: 25%; vertical-align: top; text-align: center;">
+
+                    {% elif content.title == "tridosha_pdf_icon_2" %}
+                    <img src="{{ content.value }}"
+                        style="width: 125px; height: auto; display: block; margin: 10px auto;">
+
+                </td>
+            </tr>
+        </table>
+
+
+        {% elif content.title == "tridosha_text_3" %}
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 80%; vertical-align: top; padding-right: 10px;">
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+                </td>
+                <td style="width: 25%; vertical-align: top; text-align: center;">
+
+                    {% elif content.title == "tridosha_pdf_icon_3" %}
+                    <img src="{{ content.value }}"
+                        style="width: 125px; height: auto; display: block; margin: 10px auto;">
+
+                </td>
+            </tr>
+        </table>
+
+
+        {% elif content.title == "tridosha_values" %}
+
+        <!-- <p>{{ content.value }}</p> -->
+
+
+
+
+
+        {% elif content.title == "yin_yang_pdf_graph" %}
+
+
+
+        <!-- <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 45px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+
+
+        <div class="page-break"></div>
+        <!-- {% include "header_snippet.html" %} -->
+
+        <div class="h3-wrapper">
+            <h3 style="margin-bottom: 2px;">Yin Yang Of The Five Elements</h3>
+        </div>
+        <img src="{{ content.value }}" alt="Yin Yang Graph"
+            style="width: 650px; height: auto; display: block; margin-top: 0;">
+
+        {% elif content.title == "yin_yang" %}
+
+        <!-- <p>{{ content.value }}</p> -->
+
+
+
+        {% elif content.title == "organ_rel_pdf_image" %}
+        <div class="h3-wrapper">
+            <h3 style="margin-bottom: 2px;">Organ Pattern Analysis of the Body</h3>
+        </div>
+        <img src="{{ content.value }}" alt="Organ Relation Image"
+            style="width: 300px; height: auto; display: block; margin-top: -30; margin-bottom: -30; padding-bottom: -30px;">
+
+        {% elif content.title == "organ_rel_text1" %}
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 80%; vertical-align: top; padding-right: 10px;">
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+                    {% elif content.title == "organ_rel_text2" %}
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+                    {% elif content.title == "organ_rel_text3" %}
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+
+                    {% elif content.title == "organ_rel_text4" %}
+                    <p class="double-lines">{{ content.value|linebreaksbr|safe }}</p>
+                </td>
+                <td style="width: 20%; vertical-align: top; text-align: center;">
+                    {% elif content.title == "organ_rel_pdf_icon1" %}
+                    <img src="{{ content.value }}" alt="Organ Relation Icon 1"
+                        style="width: 90px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "organ_rel_pdf_icon2" %}
+                    <img src="{{ content.value }}" alt="Organ Relation Icon 2"
+                        style="width: 90px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "organ_rel_pdf_icon3" %}
+                    <img src="{{ content.value }}" alt="Organ Relation Icon 3"
+                        style="width: 90px; height: auto; display: block; margin: 10px auto;">
+                </td>
+            </tr>
+        </table>
+
+
+        <!-- <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 0px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+
+
+        <div class="page-break"></div>
+        <!-- {% include "header_snippet.html" %} -->
+
+        {% elif content.title == "nature_correlation_text" %}
+        <div class="h3-wrapper">
+            <h3>Nature Correlation</h3>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 70%; vertical-align: top; padding-right: 10px;">
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "nature_correlation_pdf_image" %}
+                </td>
+                <td style="width: 30%; vertical-align: top; text-align: center;">
+                    <img src="{{ content.value }}" alt="Nature Correlation Image"
+                        style="width: 150px; height: auto; display: block; margin: 10px auto;">
+                </td>
+            </tr>
+        </table>
+
+
+        {% elif content.title == "thought_pattern_text" %}
+        <div class="h3-wrapper">
+            <h3>Thought Pattern</h3>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 70%; vertical-align: top; padding-right: 10px;">
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "thought_pattern_pdf_image" %}
+                </td>
+                <td style="width: 30%; vertical-align: top; text-align: center;">
+                    <img src="{{ content.value }}" alt="Thought Pattern Image"
+                        style="width: 150px; height: auto; display: block; margin: 10px auto;">
+                </td>
+            </tr>
+        </table>
+
+
+        {% elif content.title == "fm_text" %}
+
+        <p>{{ content.value }}</p>
+
+        {% elif content.title == "fm_values" %}
+
+
+
+        {% elif content.title == "fm_pdf_graph" %}
+        <div class="h3-wrapper">
+            <h3>Food Metabolism</h3>
+        </div>
+
+        <img src="{{ content.value }}" alt="FM Graph"
+            style="width: 750px; height: auto; display: block; margin-top: 0;">
+        {% elif content.title == "fm_pdf_icon" %}
+
+        <!-- <img src="{{ content.value }}" alt="FM Icon"
+         style="width: 250px; height: auto; display: block; margin-top: 0;"> -->
+
+
+
+        <!-- <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 95px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+
+
+        <div class="page-break"></div>
+        <!-- {% include "header_snippet.html" %} -->
+
+
+        {% elif content.title == "ai_prediction_text1" %}
+        <div class="h3-wrapper">
+            <h3 style="margin-bottom: 5px;">Nadiswara AI Predictions</h3>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 90%; vertical-align: top; padding-right: 10px;">
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text2" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text3" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text4" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text5" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text6" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text7" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "ai_prediction_text8" %}
+                    <p>{{ content.value }}</p>
+
+                </td>
+                <td style="width: 15%; vertical-align: top; text-align: center;">
+
+                    {% elif content.title == "ai_prediction_pdf_icon1" %}
+                    <img src="{{ content.value }}"
+                        style="width: 80px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "ai_prediction_pdf_icon2" %}
+                    <img src="{{ content.value }}"
+                        style="width: 80px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "ai_prediction_pdf_icon3" %}
+                    <img src="{{ content.value }}"
+                        style="width: 80px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "ai_prediction_pdf_icon4" %}
+                    <img src="{{ content.value }}"
+                        style="width: 80px; height: auto; display: block; margin: 10px auto;">
+                </td>
+            </tr>
+        </table>
+
+
+
+        {% elif content.title == "body_pdf_image" %}
+        <div class="h3-wrapper">
+            <h3 style="margin-bottom: 5px;">Energy Flow Variation In The Body</h3>
+        </div>
+
+        <img src="{{ content.value }}" alt="Body Image"
+            style="width: 550px; height: auto; display: block; margin-top: 0px;">
+
+        {% elif content.title == "body_anotations" %}
+
+
+        <!-- <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 5px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+
+
+
+
+        <div class="page-break"></div>
+        <!-- {% include "header_snippet.html" %} -->
+
+
+        {% elif content.title == "dietary_solution_1" %}
+        <div class="h3-wrapper">
+            <h3 style="margin-bottom: 5px;">Quick Solutions</h3>
+        </div>
+
+        <h4 style="margin-bottom: -20px; padding-bottom: -35px; padding-left: -4px; color: #9f3a95;">Dietary
+            Solutions</h4>
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 70%; vertical-align: top; padding-right: 10px;">
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "dietary_solution_2" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "dietary_solution_3" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "dietary_solution_4" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "dietary_solution_5" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "dietary_solution_6" %}
+                    <p>{{ content.value }}</p>
+                </td>
+                <td style="width: 25%; vertical-align: top; text-align: center;">
+
+                    {% elif content.title == "dietary_solution_pdf_icon_1" %}
+                    <img src="{{ content.value }}"
+                        style="width: 125px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "dietary_solution_pdf_icon_2" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "dietary_solution_pdf_icon_3" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "dietary_solution_pdf_icon_4" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "dietary_solution_pdf_icon_5" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "dietary_solution_pdf_icon_6" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+                </td>
+            </tr>
+        </table>
+
+
+        {% elif content.title == "emotional_lifestyle_correction_1" %}
+
+
+        <h4 style="margin-bottom: -20px; padding-bottom: -35px; padding-left: -4px; color: #9f3a95;">Emotional &
+            Lifestyle Corrections</h4>
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 70%; vertical-align: top; padding-right: 10px;">
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "emotional_lifestyle_correction_2" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "emotional_lifestyle_correction_3" %}
+                    <p>{{ content.value }}</p>
+
+                    {% elif content.title == "emotional_lifestyle_correction_4" %}
+                    <p>{{ content.value }}</p>
+
+                </td>
+                <td style="width: 25%; vertical-align: top; text-align: center;">
+
+                    {% elif content.title == "emotional_lifestyle_correction_pdf_icon_1" %}
+                    <img src="{{ content.value }}"
+                        style="width: 125px; height: auto; display: block; margin: 10px auto;">
+                    {% elif content.title == "emotional_lifestyle_correction_pdf_icon_2" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "emotional_lifestyle_correction_pdf_icon_3" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+
+                    {% elif content.title == "emotional_lifestyle_correction_pdf_icon_4" %}
+                    <img src="{{ content.value }}"
+                        style="width: 95px; height: auto; display: block; margin: 10px auto;">
+                </td>
+            </tr>
+        </table>
+
+
+        <!-- <pdf:footer>
+                <table style="width: 100%; border-top: 1px solid #ddd; margin-top: 400px; padding-top: 5px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 12px;">
+                            <strong>Patient Name:</strong> {{ sections.0.section_metadata.patient_name }}
+                        </td>
+                        <td style="text-align: right; font-size: 12px;">
+                            <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                        </td>
+                    </tr>
+                </table>
+            </pdf:footer> -->
+
+        <div class="educational-note-box">
+            <p><strong>Note:</strong> It is only interpretation of five elements and education only not a medical
+                advice. Please consult physician for your medical treatment.</p>
+        </div>
+
+
+
+
+
+
+
+
+        {% elif content.title == "Acupressure Report" %}
+
+
+
+
+        <div class="h3-wrapper">
+            <h3>Acupressure Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 550px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Acupressure Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+
+
+
+        {% elif content.title == "Single Seed Report" %}
+
+
+
+
+
+        <div class="h3-wrapper">
+            <h3>Single Seed Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 600px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Single Seed Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+
+
+        {% elif content.title == "Colour Report" %}
+
+
+
+        <div class="h3-wrapper">
+            <h3>Colour Therapy Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 600px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Colour Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+
+        {% elif content.title == "Auricular Report" %}
+
+
+
+
+        <div class="h3-wrapper">
+            <h3>Auricular Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 430px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Auricular Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+        {% elif content.title == "Seed Therapy Report" %}
+
+
+
+
+        <div class="h3-wrapper">
+            <h3>Seed Therapy Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 600px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Seed Therapy Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+
+
+        {% elif content.title == "Mudra Report 1" %}
+
+
+
+        <div class="h3-wrapper">
+            <h3>Mudra Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Mudra Report 2" %}
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+
+
+        {% elif content.title == "Mudra Report 3" %}
+
+
+
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Mudra Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+
+
+        {% elif content.title == "Yoga Report 1" %}
+
+
+        <div class="h3-wrapper">
+            <h3>Yoga Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Yoga Report 2" %}
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+        {% elif content.title == "Yoga Report 3" %}
+
+
+
+
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Yoga Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+        {% elif content.title == "Pranayama Report 1" %}
+
+
+
+        <div class="h3-wrapper">
+            <h3>Pranayama Report</h3>
+        </div>
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Pranayama Report 2" %}
+
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+        {% elif content.title == "Pranayama Report 3" %}
+
+
+
+
+        <img src="{{ content.value }}" alt="Quick Solutions Image"
+            style="width: 450px; height: auto; display: block; margin-top: 10px;">
+
+
+        {% elif content.title == "Pranayama Notes" %}
+
+        <p>{{ content.value }}</p>
+
+
+
+
+
+
+
+
+        {% else %}
+        <h3>{{ content.title }}</h3>
+        <p>{{ content.value }}</p>
+        {% endif %}
+
+
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+
+        <!-- <div class="fixed-header">
+                <img src="{{ request.scheme }}://{{ request.get_host }}{% static 'images/header.png' %}}"
+                    alt="Header Image">
+            </div> -->
+
+
+
+        <!-- fixed footer repeated on every page -->
+        <div class="footer">
+            <table style="width:100%; border-top:1px solid #ddd; margin-top:5px; font-size:12px;">
+                <tr>
+                    <td style="text-align:left;">
+                        <strong>Patient Name:</strong>
+                        {{ sections.0.section_metadata.patient_name }}
+                    </td>
+                    <td style="text-align:right;">
+                        <a href="http://www.nadiswara.com">www.nadiswara.com</a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+
+
+</body>
+
+<div class="absolute-top-bar">
+
+    <div class="header-img">
+
+    </div>
+    <div class="header-img">
+        <img src="https://naadiswara.s3.ap-south-1.amazonaws.com/Header+image/header.png" alt="Header Image">
+    </div>
+</div>
+
+
+</html>

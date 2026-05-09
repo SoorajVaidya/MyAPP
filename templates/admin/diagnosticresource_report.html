@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        img {
+            max-width: 300px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Complete Diagnostic Report for {{ object.pattern_name|default:"Unnamed Report" }}</h1>
+    <p><strong>Pattern Number:</strong> {{ object.pattern_number|default:"-" }}</p>
+    <hr>
+
+    <h2>All Details</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for field in fields %}
+                <tr>
+                    <td><strong>{{ field.name|capfirst }}</strong></td>
+                    <td>
+                        {% if field.is_url and field.value %}
+                            <img src="{{ field.value }}" alt="{{ field.name|default:"Image" }}">
+                        {% elif field.value %}
+                            {{ field.value }}
+                        {% else %}
+                            <em>Not Provided</em>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
