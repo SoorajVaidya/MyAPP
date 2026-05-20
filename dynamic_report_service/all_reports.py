@@ -514,7 +514,25 @@ def generate_pdf_for_pattern(report_history, parameters, user_name, patient_name
     # Generate PDF using WeasyPrint
     HTML(string=html_content).write_pdf(target=pdf_file)
     pdf_file.seek(0)
-    pdf_content = pdf_file.getvalue()
+    return pdf_file.getvalue()
+
+
+def generate_pdf_for_pattern(report_history, parameters, user_name, patient_name, patient_age, patient_number):
+    """
+    Generate a PDF for a given report type and upload it to AWS S3, returning its URL.
+
+    PDF assembly is delegated to render_pattern_pdf_bytes(); this function keeps its
+    original {"pdf_url": ...} / {"error": ...} contract for existing callers, while
+    the async pipeline can call render_pattern_pdf_bytes() directly for raw bytes.
+    """
+    try:
+        pdf_content = render_pattern_pdf_bytes(
+            report_history, parameters, user_name, patient_name, patient_age, patient_number
+        )
+    except ValueError as exc:
+        return {"error": str(exc), "pdf_url": None}
+
+    report_type_override = parameters.get("report_type_override", "default")
 
     # Upload PDF to S3
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
