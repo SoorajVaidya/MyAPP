@@ -414,3 +414,17 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 INSTALLED_APPS += ["storages"]  # Ensure django-storages is installed
+
+# --- Async pipeline (Redis Streams) ---
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+PULSE_STREAM_RECEIVED = os.getenv("PULSE_STREAM_RECEIVED", "pulse.received")
+PULSE_STREAM_ANALYSIS_COMPLETE = os.getenv(
+    "PULSE_STREAM_ANALYSIS_COMPLETE", "pulse.analysis_complete"
+)
+PULSE_STREAM_DLQ = os.getenv("PULSE_STREAM_DLQ", "pulse.dlq")
+PULSE_SIGNAL_GROUP = os.getenv("PULSE_SIGNAL_GROUP", "signal-workers")
+PULSE_REPORT_GROUP = os.getenv("PULSE_REPORT_GROUP", "report-workers")
+PULSE_WORKER_POOL_SIZE = int(os.getenv("PULSE_WORKER_POOL_SIZE", "2"))
+PULSE_LOCK_TTL_MS = int(os.getenv("PULSE_LOCK_TTL_MS", "60000"))
+PULSE_REPORT_RETRY_DELAYS = (1.0, 5.0, 25.0)
+PULSE_PRESIGN_TTL_SECONDS = int(os.getenv("PULSE_PRESIGN_TTL_SECONDS", "900"))

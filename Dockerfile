@@ -58,7 +58,14 @@ RUN python manage.py collectstatic --noinput
 # Expose ports for Django and Locust
 EXPOSE 8000 8089
 
-# Start Gunicorn server
+# Default entrypoint runs the API. Worker processes use the same image but
+# override the command — for example, in docker-compose or k8s:
+#
+#   command: ["python", "manage.py", "run_pulse_worker", "signal"]
+#   command: ["python", "manage.py", "run_pulse_worker", "report"]
+#
+# Don't run workers inside the API container — ProcessPool fork() collides
+# with Gunicorn's pre-forked workers.
 CMD ["gunicorn", "--workers=4", "--threads=2", "--timeout=120", "oohy_product.wsgi:application", "--bind", "0.0.0.0:8000"]
 
 

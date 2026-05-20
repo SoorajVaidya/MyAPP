@@ -1,4 +1,5 @@
 from django.urls import path, include
+from .async_views import AnalysisJobStatusView, SubmitAnalysisJobView
 from .views import AnalysePulseView, ChangePatternAPIView, UploadObservationsView, PulseDataSymptomsCreateAPIView, PreAnalysePulseView, \
     PulseLogView, PostAnalysePulseView
 from rest_framework.routers import DefaultRouter
@@ -12,9 +13,12 @@ urlpatterns = [
     path('upload_observations/<int:pulse_id>/', UploadObservationsView.as_view(), name='upload_observations'),
     path('upload_symptoms/<int:pulse_id>/', PulseDataSymptomsCreateAPIView.as_view(), name='pulse_data_symptoms_create'),
     path('pulse-log/', PulseLogView.as_view(), name='pulse-log-create'),
-    
+
     path('single-seed-protocol/', ChangePatternAPIView.as_view(), name='single-seed-protocol'),
 
+    # Async event-driven pipeline
+    path('jobs/', SubmitAnalysisJobView.as_view(), name='analysis-job-submit'),
+    path('jobs/<uuid:job_id>/status/', AnalysisJobStatusView.as_view(), name='analysis-job-status'),
 ]
 
 

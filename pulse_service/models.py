@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.utils import timezone
 
@@ -195,3 +197,77 @@ class ReportTask(models.Model):
 
     def __str__(self):
         return f"{self.task_type} - {self.task_id} ({self.language})"
+
+
+class AnalysisJob(models.Model):
+    STATE_RECEIVED = "RECEIVED"
+    STATE_PROCESSING_SIGNAL = "PROCESSING_SIGNAL"
+    STATE_ANALYSIS_COMPLETE = "ANALYSIS_COMPLETE"
+    STATE_REPORT_GENERATING = "REPORT_GENERATING"
+    STATE_COMPLETED = "COMPLETED"
+    STATE_FAILED = "FAILED"
+
+    STATE_CHOICES = [
+        (STATE_RECEIVED, "Received"),
+        (STATE_PROCESSING_SIGNAL, "Processing signal"),
+        (STATE_ANALYSIS_COMPLETE, "Analysis complete"),
+        (STATE_REPORT_GENERATING, "Report generating"),
+        (STATE_COMPLETED, "Completed"),
+        (STATE_FAILED, "Failed"),
+    ]
+
+    # Directed graph of legal transitions. Anything not listed here is rejected
+    # by transition_to() and raises IllegalTransition.
+    ALLOWED_TRANSITIONS = {
+        STATE_RECEIVED: {STATE_PROCESSING_SIGNAL, STATE_FAILED},
+        STATE_PROCESSING_SIGNAL: {STATE_ANALYSIS_COMPLETE, STATE_FAILED},
+        STATE_ANALYSIS_COMPLETE: {STATE_REPORT_GENERATING, STATE_FAILED},
+        STATE_REPORT_GENERATING: {STATE_COMPLETED, STATE_FAILED},
+        STATE_COMPLETED: set(),
+        STATE_FAILED: set(),
+    }
+
+    job_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(
+        PatientsModel, on_delete=models.PROTECT, related_name="analysis_jobs"
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    idempotency_token = models.CharField(max_length=128, unique=True)
+    state = models.CharField(
+        max_length=32, choices=STATE_CHOICES, default=STATE_RECEIVED
+    )
+    language = models.CharField(max_length=16, default="english")
+
+    signal_object_key = models.CharField(max_length=512, null=True, blank=True)
+    report_object_key = models.CharField(max_length=512, null=True, blank=True)
+    analysis_result = models.JSONField(null=True, blank=True)
+
+    error_code = models.CharField(max_length=64, null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "pulse_analysis_job"
+        indexes = [
+            models.Index(fields=["state"]),
+            models.Index(fields=["patient", "-created_at"]),
+        ]
+
+    class IllegalTransition(Exception):
+        pass
+
+    def transition_to(self, new_state: str, **fields) -> "AnalysisJob":
+        if new_state not in self.ALLOWED_TRANSITIONS.get(self.state, set()):
+            raise AnalysisJob.IllegalTransition(
+                f"cannot transition {self.state} -> {new_state}"
+            )
+        self.state = new_state
+        for key, value in fields.items():
+            setattr(self, key, value)
+        self.save(update_fields=["state", "updated_at", *fields.keys()])
+        return self
+
+    def __str__(self) -> str:
+        return f"AnalysisJob {self.job_id} ({self.state})"
