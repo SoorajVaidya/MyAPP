@@ -426,19 +426,31 @@ def generate_treatment_report(parameters, user_name=None, patient_name=None, pat
 #############################################
 
 
-def generate_pdf_for_pattern(report_history, parameters, user_name, patient_name, patient_age, patient_number):
+def render_pattern_pdf_bytes(report_history, parameters, user_name, patient_name, patient_age, patient_number):
     """
-    Generate a PDF for a given report type by:
-      1. Calling generate_treatment_report to get the report data.
-      2. Generating charts and processing images.
-      3. Updating the report content with the dynamic images.
-      4. Rendering HTML and converting it to a PDF using WeasyPrint.
-      5. Uploading the PDF to AWS S3 and returning its URL.
+    Assemble the diagnostic-report PDF and return the raw bytes.
+
+    Pipeline:
+      1. Call generate_treatment_report to fetch the structured report data.
+      2. Generate dosha / yin-yang / food-metabolism charts from report_history.
+      3. Resolve the DiagnosticResource for the requested report_type_override
+         and optionally highlight body-image labels.
+      4. Inject charts and pulse data into the section context.
+      5. Render diagnostic_resource_weasyprint1.html via WeasyPrint and return
+         the resulting PDF bytes.
+
+    Contract:
+      Returns the PDF bytes on success.
+      Raises ValueError when the treatment-report lookup fails (e.g. no matching
+      pattern). The async ReportWorker treats exceptions as transient and applies
+      its exponential-backoff retry / DLQ policy; the legacy
+      generate_pdf_for_pattern() wrapper catches ValueError to preserve its older
+      {"pdf_url"/"error"} dict contract for synchronous callers.
     """
 
     treatment_report = generate_treatment_report(parameters, user_name, patient_name, patient_age, patient_number)
     if treatment_report.get("status") != "success":
-        return {"error": treatment_report.get("message"), "pdf_url": None}
+        raise ValueError(treatment_report.get("message") or "treatment report failed")
     all_context = {"sections": treatment_report.get("data", [])}
 
     # Generate dynamic charts/images
