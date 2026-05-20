@@ -15,6 +15,8 @@ pulse_payments/__pycache__/*
 all_context.json
 AWSCLIV2.pkg
 .venv/
+venv/
+new_env/
 *.log
 
 staticfiles/

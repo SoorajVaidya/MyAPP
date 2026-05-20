@@ -1,3 +1,0 @@
-[pyinstaller40]
-hook-dirs = b2sdk._pyinstaller:get_hook_dirs
-
