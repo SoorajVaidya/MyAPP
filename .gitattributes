@@ -1,0 +1,56 @@
+# Default: treat text files as text and normalise to LF in the repo.
+# Combined with `core.autocrlf=input` locally, this prevents Windows editors
+# from reintroducing CRLF endings in commits.
+* text=auto eol=lf
+
+# Scripts run on Linux — force LF even when checked out on Windows.
+*.sh   text eol=lf
+*.bash text eol=lf
+
+# Scripts that must keep CRLF for native Windows interpreters.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Known binary types — exempt from any text/EOL transformation.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.bmp   binary
+*.svgz  binary
+*.webp  binary
+
+*.zip   binary
+*.gz    binary
+*.tgz   binary
+*.tar   binary
+*.bz2   binary
+*.xz    binary
+*.7z    binary
+
+*.exe   binary
+*.dll   binary
+*.so    binary
+*.dylib binary
+*.pyd   binary
+*.pyc   binary
+*.pyo   binary
+*.whl   binary
+
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+
+*.db      binary
+*.sqlite  binary
+*.sqlite3 binary
+
+*.pkl  binary
+*.npz  binary
+*.npy  binary
+*.h5   binary
