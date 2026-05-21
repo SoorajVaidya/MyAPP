@@ -69,7 +69,8 @@ NESTED_RESULT = {
 
 
 def _make_user_and_patient(email: str = "adapter@example.com") -> tuple:
-    user = User.objects.create(email=email, phone_number=email.replace("@", "_"))
+    # User.phone_number is max_length=15; trim the email-derived value to fit.
+    user = User.objects.create(email=email, phone_number=email.replace("@", "_")[:15])
     patient = PatientsModel.objects.create(
         user_profile=user,
         first_name="Test",
