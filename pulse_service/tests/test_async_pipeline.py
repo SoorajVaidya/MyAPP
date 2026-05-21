@@ -9,47 +9,20 @@ Coverage:
 """
 from __future__ import annotations
 
-import hashlib
-from datetime import date
 from unittest import mock
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from global_utils import distributed_lock as dlock_module
 from global_utils import event_broker as broker_module
 from global_utils import redis_client as redis_client_module
-from patients.models import PatientsModel
 from pulse_service.models import AnalysisJob
 from pulse_service.workers.report_worker import ReportWorker
 from pulse_service.workers.signal_worker import SignalWorker
 
 from .fakes import InMemoryBroker, InMemoryLockKV, SyncExecutor
-
-
-User = get_user_model()
-
-
-def _make_user_and_patient(email: str = "t@example.com") -> tuple:
-    # User.phone_number is max_length=15 and unique; hash to a 14-char prefix
-    # so the same email always maps to the same phone and distinct emails do
-    # not collide after truncation.
-    phone = hashlib.md5(email.encode()).hexdigest()[:14]
-    user = User.objects.create(email=email, phone_number=phone)
-    patient = PatientsModel.objects.create(
-        user_profile=user,
-        first_name="Test",
-        last_name="Patient",
-        gender="M",
-        dob=date(1990, 1, 1),
-        phone_number="9999999999",
-        country="X",
-        state="Y",
-        city="Z",
-        email=email + ".pat",
-    )
-    return user, patient
+from .fixtures import make_user_and_patient
 
 
 class AsyncPipelineTestBase(TestCase):
@@ -66,7 +39,7 @@ class AsyncPipelineTestBase(TestCase):
 
 class SignalWorkerIdempotencyTests(AsyncPipelineTestBase):
     def test_duplicate_event_for_completed_job_is_skipped(self) -> None:
-        user, patient = _make_user_and_patient()
+        user, patient = make_user_and_patient()
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -104,7 +77,7 @@ class SignalWorkerIdempotencyTests(AsyncPipelineTestBase):
         )
 
     def test_received_event_advances_to_analysis_complete(self) -> None:
-        user, patient = _make_user_and_patient(email="ok@example.com")
+        user, patient = make_user_and_patient(email="ok@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -145,7 +118,7 @@ class SignalWorkerIdempotencyTests(AsyncPipelineTestBase):
 
 class ReportWorkerRetryTests(AsyncPipelineTestBase):
     def _make_job(self) -> AnalysisJob:
-        user, patient = _make_user_and_patient(email="r@example.com")
+        user, patient = make_user_and_patient(email="r@example.com")
         return AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -227,7 +200,7 @@ class ReportWorkerRetryTests(AsyncPipelineTestBase):
 
 class StateMachineTests(TestCase):
     def test_illegal_transitions_rejected(self) -> None:
-        user, patient = _make_user_and_patient(email="sm@example.com")
+        user, patient = make_user_and_patient(email="sm@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -240,7 +213,7 @@ class StateMachineTests(TestCase):
             job.transition_to(AnalysisJob.STATE_REPORT_GENERATING)
 
     def test_failed_is_terminal(self) -> None:
-        user, patient = _make_user_and_patient(email="sm2@example.com")
+        user, patient = make_user_and_patient(email="sm2@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,

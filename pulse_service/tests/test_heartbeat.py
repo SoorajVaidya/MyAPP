@@ -32,7 +32,7 @@ from pulse_service.models import AnalysisJob
 from pulse_service.workers.signal_worker import SignalWorker
 
 from .fakes import InMemoryBroker, InMemoryLockKV, SyncExecutor
-from .test_async_pipeline import _make_user_and_patient
+from .fixtures import make_user_and_patient
 
 
 User = get_user_model()
@@ -121,7 +121,7 @@ class SignalWorkerHeartbeatTests(TestCase):
         redis_client_module.reset_for_tests(None)
 
     def test_lost_lock_aborts_write_and_leaves_pending(self) -> None:
-        user, patient = _make_user_and_patient(email="hb@example.com")
+        user, patient = make_user_and_patient(email="hb@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,

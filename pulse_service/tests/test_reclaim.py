@@ -24,7 +24,7 @@ from pulse_service.workers.base import WorkerLoop
 from pulse_service.workers.signal_worker import SignalWorker
 
 from .fakes import InMemoryBroker, InMemoryLockKV, SyncExecutor
-from .test_async_pipeline import _make_user_and_patient
+from .fixtures import make_user_and_patient
 
 
 User = get_user_model()
@@ -72,7 +72,7 @@ class ReclaimDispatchTests(TestCase):
         """Reclaim should redeliver to SignalWorker._handle, which then runs
         the algo, advances state, and publishes downstream — even though the
         original consumer is gone."""
-        user, patient = _make_user_and_patient(email="rc@example.com")
+        user, patient = make_user_and_patient(email="rc@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -129,7 +129,7 @@ class ReclaimDispatchTests(TestCase):
         """If the original worker actually completed the work before crashing
         (the ack just never landed), the reclaim handler must NOT re-run the
         algo or republish — it should ack the pending message and move on."""
-        user, patient = _make_user_and_patient(email="rc2@example.com")
+        user, patient = make_user_and_patient(email="rc2@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,

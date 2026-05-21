@@ -17,24 +17,19 @@ B2 fetch never run. Coverage:
 """
 from __future__ import annotations
 
-import hashlib
-from datetime import date
 from unittest import mock
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from global_utils import event_broker as broker_module
 from global_utils import redis_client as redis_client_module
-from patients.models import PatientsModel
 from pulse_service.models import AnalysisJob, PulseData
 from report_service.models import DiagnosisReportHistory
 
 from pulse_service.tests.fakes import InMemoryBroker, InMemoryLockKV
+from pulse_service.tests.fixtures import make_user_and_patient
 
-
-User = get_user_model()
 
 ADAPTER = "dynamic_report_service.async_adapter"
 RENDER = "dynamic_report_service.all_reports.render_pattern_pdf_bytes"
@@ -69,30 +64,9 @@ NESTED_RESULT = {
 }
 
 
-def _make_user_and_patient(email: str = "adapter@example.com") -> tuple:
-    # User.phone_number is max_length=15 and unique; hash to a 14-char prefix
-    # so the same email always maps to the same phone and distinct emails do
-    # not collide after truncation.
-    phone = hashlib.md5(email.encode()).hexdigest()[:14]
-    user = User.objects.create(email=email, phone_number=phone)
-    patient = PatientsModel.objects.create(
-        user_profile=user,
-        first_name="Test",
-        last_name="Patient",
-        gender="M",
-        dob=date(1990, 1, 1),
-        phone_number="9999999999",
-        country="X",
-        state="Y",
-        city="Z",
-        email=email + ".pat",
-    )
-    return user, patient
-
-
 class BuildReportPdfTests(TestCase):
     def setUp(self) -> None:
-        self.user, self.patient = _make_user_and_patient()
+        self.user, self.patient = make_user_and_patient()
         self.job = AnalysisJob.objects.create(
             patient=self.patient,
             user=self.user,
@@ -208,7 +182,7 @@ class ReportGeneratorWrappingTests(TestCase):
     """The production ReportGenerator must surface adapter failures as ReportError."""
 
     def setUp(self) -> None:
-        self.user, self.patient = _make_user_and_patient(email="gen@example.com")
+        self.user, self.patient = make_user_and_patient(email="gen@example.com")
         self.job = AnalysisJob.objects.create(
             patient=self.patient,
             user=self.user,
@@ -254,7 +228,7 @@ class RealAdapterRetryDLQTests(TestCase):
         broker_module.set_broker_for_tests(self.broker)
         redis_client_module.reset_for_tests(self.kv)
 
-        self.user, self.patient = _make_user_and_patient(email="dlq@example.com")
+        self.user, self.patient = make_user_and_patient(email="dlq@example.com")
         self.job = AnalysisJob.objects.create(
             patient=self.patient,
             user=self.user,

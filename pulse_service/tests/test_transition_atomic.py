@@ -16,7 +16,7 @@ from django.test import TransactionTestCase
 
 from pulse_service.models import AnalysisJob
 
-from .test_async_pipeline import _make_user_and_patient
+from .fixtures import make_user_and_patient
 
 
 User = get_user_model()
@@ -27,7 +27,7 @@ class TransitionAtomicTests(TransactionTestCase):
     DB transaction (savepoints in plain TestCase don't exercise row locks)."""
 
     def test_concurrent_failed_then_advance_raises(self) -> None:
-        user, patient = _make_user_and_patient(email="tx@example.com")
+        user, patient = make_user_and_patient(email="tx@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -54,7 +54,7 @@ class TransitionAtomicTests(TransactionTestCase):
         self.assertEqual(fresh.state, AnalysisJob.STATE_FAILED)
 
     def test_transition_to_syncs_in_memory_copy(self) -> None:
-        user, patient = _make_user_and_patient(email="tx2@example.com")
+        user, patient = make_user_and_patient(email="tx2@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
@@ -72,7 +72,7 @@ class TransitionAtomicTests(TransactionTestCase):
         self.assertEqual(job.analysis_result, {"primary": "Wind"})
 
     def test_terminal_state_rejects_any_transition(self) -> None:
-        user, patient = _make_user_and_patient(email="tx3@example.com")
+        user, patient = make_user_and_patient(email="tx3@example.com")
         job = AnalysisJob.objects.create(
             patient=patient,
             user=user,
