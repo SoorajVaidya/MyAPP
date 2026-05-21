@@ -16,12 +16,34 @@ from patients.models import PatientsModel
 from report_service.models import DiagnosisReportHistory
 from report_service.utils import DiagnosticResourceStorage
 
-info = InMemoryAccountInfo()
-b2_api = B2Api(info)
-b2_api.authorize_account(
-    "production", os.getenv("B2_ACCOUNT_ID"), os.getenv("B2_APPLICATION_KEY")
-)
-bucket = b2_api.get_bucket_by_name(os.getenv("B2_BUCKET_NAME"))
+# Backblaze B2 handles are initialized lazily instead of at import time.
+# ``authorize_account`` performs a network round-trip; running it while Django
+# populates the app registry made startup — and the entire test suite — crash
+# whenever B2 was unreachable or credentials were absent. The module-level
+# names ``info`` / ``b2_api`` / ``bucket`` are preserved through PEP 562
+# ``__getattr__`` so any caller still referencing them keeps working, but the
+# network call now happens on first access rather than on import.
+_b2_cache: dict = {}
+
+
+def _get_b2() -> dict:
+    if not _b2_cache:
+        info = InMemoryAccountInfo()
+        b2_api = B2Api(info)
+        b2_api.authorize_account(
+            "production", os.getenv("B2_ACCOUNT_ID"), os.getenv("B2_APPLICATION_KEY")
+        )
+        _b2_cache["info"] = info
+        _b2_cache["b2_api"] = b2_api
+        _b2_cache["bucket"] = b2_api.get_bucket_by_name(os.getenv("B2_BUCKET_NAME"))
+    return _b2_cache
+
+
+def __getattr__(name):
+    # PEP 562 lazy module attribute access for the B2 handles above.
+    if name in ("info", "b2_api", "bucket"):
+        return _get_b2()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def dynamic_upload_to(instance, filename):
