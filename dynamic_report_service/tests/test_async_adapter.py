@@ -17,6 +17,7 @@ B2 fetch never run. Coverage:
 """
 from __future__ import annotations
 
+import hashlib
 from datetime import date
 from unittest import mock
 
@@ -69,8 +70,11 @@ NESTED_RESULT = {
 
 
 def _make_user_and_patient(email: str = "adapter@example.com") -> tuple:
-    # User.phone_number is max_length=15; trim the email-derived value to fit.
-    user = User.objects.create(email=email, phone_number=email.replace("@", "_")[:15])
+    # User.phone_number is max_length=15 and unique; hash to a 14-char prefix
+    # so the same email always maps to the same phone and distinct emails do
+    # not collide after truncation.
+    phone = hashlib.md5(email.encode()).hexdigest()[:14]
+    user = User.objects.create(email=email, phone_number=phone)
     patient = PatientsModel.objects.create(
         user_profile=user,
         first_name="Test",
