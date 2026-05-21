@@ -92,6 +92,14 @@ def _ensure_report_history(job: AnalysisJob, flat: Mapping[str, Any]):
     Keyed on deterministic per-job values (the signal object key, and the pulse
     FK) so report retries reuse the same rows instead of duplicating them.
     Returns the persisted DiagnosisReportHistory.
+
+    Concurrency contract: callers must hold the ``pulse:job:{job_id}:report``
+    lock for the duration of this call. The ``get_or_create`` pair below is
+    NOT atomic against a concurrent peer hitting the same job — two workers
+    inside the get-but-not-found window would each insert. ``ReportWorker``
+    enforces this by wrapping the whole report stage in
+    ``lock_with_heartbeat``; if you call this from another seam, take the
+    same lock first or add a unique constraint on ``PulseData.pulse_uri``.
     """
     from pulse_service.models import PulseData
     from report_service.models import DiagnosisReportHistory

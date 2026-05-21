@@ -185,3 +185,148 @@ class SignalWorkerHeartbeatTests(TestCase):
             settings.PULSE_STREAM_RECEIVED, settings.PULSE_SIGNAL_GROUP
         )
         self.assertIn(msg_id, pending)
+
+
+class ReportWorkerHeartbeatTests(TestCase):
+    """Same contract as SignalWorkerHeartbeatTests, but for the report stage.
+
+    WeasyPrint render + B2 upload can outlive a static TTL; if the heartbeat
+    reports a lost lock the worker must NOT mark the job COMPLETED and must
+    NOT ack — the pending entry needs to survive for reclaim.
+    """
+
+    def setUp(self) -> None:
+        self.broker = InMemoryBroker()
+        self.kv = InMemoryLockKV()
+        broker_module.set_broker_for_tests(self.broker)
+        redis_client_module.reset_for_tests(self.kv)
+
+    def tearDown(self) -> None:
+        broker_module.set_broker_for_tests(None)
+        redis_client_module.reset_for_tests(None)
+
+    def test_lost_lock_after_generate_aborts_completion(self) -> None:
+        from pulse_service.workers.report_worker import ReportWorker
+
+        user, patient = make_user_and_patient(email="hbr@example.com")
+        job = AnalysisJob.objects.create(
+            patient=patient,
+            user=user,
+            idempotency_token="hbr-tok",
+            state=AnalysisJob.STATE_ANALYSIS_COMPLETE,
+            analysis_result={"primary": "Wind"},
+        )
+        msg_id = self.broker.enqueue(
+            settings.PULSE_STREAM_ANALYSIS_COMPLETE, {"job_id": str(job.job_id)}
+        )
+
+        # First check() (pre-generate) passes; second (post-generate, pre-write)
+        # raises. This pins the contract that lock-loss after a successful
+        # upload must still abort the COMPLETED transition.
+        class FlipHeld:
+            def __init__(self_inner):
+                self_inner.calls = 0
+
+            def check(self_inner):
+                self_inner.calls += 1
+                if self_inner.calls >= 2:
+                    raise LockLostError("simulated post-generate loss")
+
+        from contextlib import contextmanager as _cm
+
+        held = FlipHeld()
+
+        @_cm
+        def fake_lock_with_heartbeat(_key, ttl_ms):
+            yield held
+
+        generator_calls = []
+
+        def generator(_job, _result):
+            generator_calls.append("ran")
+            return "reports/hbr.pdf"
+
+        with mock.patch(
+            "pulse_service.workers.report_worker.lock_with_heartbeat",
+            fake_lock_with_heartbeat,
+        ):
+            worker = ReportWorker(
+                broker=self.broker,
+                generator=generator,
+                retry_delays=(0.0, 0.0, 0.0),
+                sleep=lambda _s: None,
+            )
+            for message in self.broker.consume(
+                settings.PULSE_STREAM_ANALYSIS_COMPLETE,
+                settings.PULSE_REPORT_GROUP,
+                "t",
+                count=8,
+                block_ms=0,
+            ):
+                worker._handle(message)
+
+        job.refresh_from_db()
+        # Generator ran (and uploaded), but the COMPLETED write was aborted.
+        self.assertEqual(generator_calls, ["ran"])
+        self.assertNotEqual(job.state, AnalysisJob.STATE_COMPLETED)
+        self.assertIsNone(job.report_object_key)
+        # Message must stay pending so a peer can pick it up via reclaim.
+        pending = self.broker.pending(
+            settings.PULSE_STREAM_ANALYSIS_COMPLETE, settings.PULSE_REPORT_GROUP
+        )
+        self.assertIn(msg_id, pending)
+
+    def test_lock_loss_before_first_attempt_skips_generator(self) -> None:
+        """A pre-generate loss must NOT call the generator at all — the upload
+        is the expensive side-effect we're trying to avoid running on stolen
+        ownership."""
+        from pulse_service.workers.report_worker import ReportWorker
+
+        user, patient = make_user_and_patient(email="hbr2@example.com")
+        job = AnalysisJob.objects.create(
+            patient=patient,
+            user=user,
+            idempotency_token="hbr2-tok",
+            state=AnalysisJob.STATE_ANALYSIS_COMPLETE,
+            analysis_result={"primary": "Wind"},
+        )
+        self.broker.enqueue(
+            settings.PULSE_STREAM_ANALYSIS_COMPLETE, {"job_id": str(job.job_id)}
+        )
+
+        class AlwaysLost:
+            def check(self_inner):
+                raise LockLostError("lost before first attempt")
+
+        from contextlib import contextmanager as _cm
+
+        @_cm
+        def fake_lock_with_heartbeat(_key, ttl_ms):
+            yield AlwaysLost()
+
+        calls = []
+
+        def generator(_j, _r):
+            calls.append("ran")
+            return "reports/x.pdf"
+
+        with mock.patch(
+            "pulse_service.workers.report_worker.lock_with_heartbeat",
+            fake_lock_with_heartbeat,
+        ):
+            worker = ReportWorker(
+                broker=self.broker, generator=generator,
+                retry_delays=(0.0,), sleep=lambda _s: None,
+            )
+            for message in self.broker.consume(
+                settings.PULSE_STREAM_ANALYSIS_COMPLETE,
+                settings.PULSE_REPORT_GROUP,
+                "t",
+                count=8,
+                block_ms=0,
+            ):
+                worker._handle(message)
+
+        self.assertEqual(calls, [])  # generator never called
+        job.refresh_from_db()
+        self.assertNotEqual(job.state, AnalysisJob.STATE_COMPLETED)

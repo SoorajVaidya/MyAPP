@@ -6,7 +6,11 @@ from typing import Optional, Sequence
 
 from django.conf import settings
 
-from global_utils.distributed_lock import LockAcquireError, lock
+from global_utils.distributed_lock import (
+    LockAcquireError,
+    LockLostError,
+    lock_with_heartbeat,
+)
 from global_utils.event_broker import EventBroker, Message, get_broker
 from global_utils.log_context import bind, install_filter
 from pulse_service.models import AnalysisJob
@@ -54,15 +58,26 @@ class ReportWorker:
         with bind(job_id=job_id, stage="report", consumer=self.loop.consumer_name):
             lock_key = f"pulse:job:{job_id}:report"
             try:
-                with lock(lock_key, ttl_ms=settings.PULSE_LOCK_TTL_MS):
-                    self._process(job_id, message)
+                # WeasyPrint render + B2 upload can outlive a static TTL, same
+                # as the signal stage. Heartbeat extends the key while work
+                # runs; if it's lost mid-render we abandon the message so a
+                # peer can pick it up via reclaim.
+                with lock_with_heartbeat(
+                    lock_key, ttl_ms=settings.PULSE_LOCK_TTL_MS
+                ) as held:
+                    self._process(job_id, message, held)
             except LockAcquireError:
                 log.info("report lock for %s held by peer — ack and skip", job_id)
                 self.broker.ack(
                     message.stream, settings.PULSE_REPORT_GROUP, message.message_id
                 )
+            except LockLostError:
+                log.warning(
+                    "report lock for %s was lost; leaving message pending for reclaim",
+                    job_id,
+                )
 
-    def _process(self, job_id: str, message: Message) -> None:
+    def _process(self, job_id: str, message: Message, held=None) -> None:
         try:
             job = AnalysisJob.objects.get(job_id=job_id)
         except AnalysisJob.DoesNotExist:
@@ -87,6 +102,12 @@ class ReportWorker:
         last_error: Optional[BaseException] = None
         attempts = len(self.retry_delays) + 1
         for attempt in range(1, attempts + 1):
+            # Lock-loss raises out of _process; LockLostError bubbles to _handle
+            # which leaves the message pending instead of acking. We check
+            # before each attempt so a long retry budget can't run on stolen
+            # ownership for arbitrarily long.
+            if held is not None:
+                held.check()
             try:
                 object_key = self.generator(job, job.analysis_result or {})
             except Exception as exc:
@@ -99,6 +120,11 @@ class ReportWorker:
                     self._sleep(self.retry_delays[attempt - 1])
                 continue
 
+            # The generator just uploaded the PDF to B2; abort the COMPLETED
+            # write if the lock was lost in the meantime — a peer might be
+            # uploading a competing copy under the same object key.
+            if held is not None:
+                held.check()
             job.transition_to(
                 AnalysisJob.STATE_COMPLETED,
                 report_object_key=object_key,
