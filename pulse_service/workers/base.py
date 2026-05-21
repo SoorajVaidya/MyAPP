@@ -39,6 +39,8 @@ class WorkerLoop:
         consumer_name: Optional[str] = None,
         batch_size: int = 8,
         block_ms: int = 5000,
+        reclaim_min_idle_ms: int = 120_000,
+        reclaim_every_ms: int = 30_000,
     ):
         self.stream = stream
         self.group = group
@@ -47,7 +49,10 @@ class WorkerLoop:
         self.consumer_name = consumer_name or make_consumer_name(group)
         self.batch_size = batch_size
         self.block_ms = block_ms
+        self.reclaim_min_idle_ms = reclaim_min_idle_ms
+        self.reclaim_every_ms = reclaim_every_ms
         self._stop = threading.Event()
+        self._last_reclaim_at: float = 0.0
 
     def stop(self, *_args) -> None:
         log.info("worker %s stop requested", self.consumer_name)
@@ -66,6 +71,7 @@ class WorkerLoop:
             self.group,
         )
         while not self._stop.is_set():
+            self._maybe_reclaim()
             try:
                 messages = self.broker.consume(
                     stream=self.stream,
@@ -90,3 +96,38 @@ class WorkerLoop:
                         message.message_id,
                     )
         log.info("worker %s stopped", self.consumer_name)
+
+    def _maybe_reclaim(self) -> None:
+        if self.reclaim_every_ms <= 0:
+            return
+        now = time.monotonic()
+        if (now - self._last_reclaim_at) * 1000.0 < self.reclaim_every_ms:
+            return
+        self._last_reclaim_at = now
+        try:
+            reclaimed = self.broker.reclaim_stale(
+                stream=self.stream,
+                group=self.group,
+                consumer=self.consumer_name,
+                min_idle_ms=self.reclaim_min_idle_ms,
+                count=self.batch_size,
+            )
+        except Exception:
+            log.exception("reclaim error on %s; will retry", self.stream)
+            return
+        for message in reclaimed:
+            if self._stop.is_set():
+                break
+            log.info(
+                "reclaimed stale message stream=%s id=%s",
+                message.stream,
+                message.message_id,
+            )
+            try:
+                self.handler(message)
+            except Exception:
+                log.exception(
+                    "handler error on reclaimed stream=%s id=%s — NOT acked",
+                    message.stream,
+                    message.message_id,
+                )

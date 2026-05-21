@@ -8,6 +8,7 @@ from django.conf import settings
 
 from global_utils.distributed_lock import LockAcquireError, lock
 from global_utils.event_broker import EventBroker, Message, get_broker
+from global_utils.log_context import bind, install_filter
 from pulse_service.models import AnalysisJob
 
 from .base import WorkerLoop
@@ -39,6 +40,7 @@ class ReportWorker:
         )
 
     def run_forever(self) -> None:
+        install_filter()
         self.loop.install_signal_handlers()
         self.loop.run_forever()
 
@@ -49,13 +51,16 @@ class ReportWorker:
             self.broker.ack(message.stream, settings.PULSE_REPORT_GROUP, message.message_id)
             return
 
-        lock_key = f"pulse:job:{job_id}:report"
-        try:
-            with lock(lock_key, ttl_ms=settings.PULSE_LOCK_TTL_MS):
-                self._process(job_id, message)
-        except LockAcquireError:
-            log.info("report lock for %s held by peer — ack and skip", job_id)
-            self.broker.ack(message.stream, settings.PULSE_REPORT_GROUP, message.message_id)
+        with bind(job_id=job_id, stage="report", consumer=self.loop.consumer_name):
+            lock_key = f"pulse:job:{job_id}:report"
+            try:
+                with lock(lock_key, ttl_ms=settings.PULSE_LOCK_TTL_MS):
+                    self._process(job_id, message)
+            except LockAcquireError:
+                log.info("report lock for %s held by peer — ack and skip", job_id)
+                self.broker.ack(
+                    message.stream, settings.PULSE_REPORT_GROUP, message.message_id
+                )
 
     def _process(self, job_id: str, message: Message) -> None:
         try:

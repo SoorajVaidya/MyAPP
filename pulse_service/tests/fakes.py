@@ -54,6 +54,35 @@ class InMemoryBroker:
         self.publish(dlq_stream, reason_payload)
         self.ack(original_stream, group, message_id)
 
+    def reclaim_stale(self, stream, group, consumer, min_idle_ms, count):
+        """Return all pending messages on this (stream, group) as if reclaimed.
+
+        Tests treat the fake's pending set as "stuck" — calling reclaim_stale
+        produces Messages for every pending entry. ``min_idle_ms`` is accepted
+        for API parity but the fake doesn't track per-message age.
+        """
+        from global_utils.event_broker import Message
+
+        out: List[Message] = []
+        with self._lock:
+            keys = [
+                (s, g, mid) for (s, g, mid) in list(self._pending.keys())
+                if s == stream and g == group
+            ]
+            for key in keys[:count]:
+                _s, _g, mid = key
+                payload = self._pending[key]
+                out.append(Message(message_id=mid, stream=stream, payload=payload))
+        return out
+
+    def pending(self, stream: str, group: str) -> List[str]:
+        """Test helper: list pending message ids for a (stream, group)."""
+        with self._lock:
+            return [
+                mid for (s, g, mid) in self._pending.keys()
+                if s == stream and g == group
+            ]
+
     def published(self, stream: str) -> List[dict]:
         with self._lock:
             return list(self._published[stream])
@@ -94,13 +123,22 @@ class InMemoryLockKV:
             entry = self._store.get(key)
             return entry[0] if entry else None
 
-    def eval(self, _script: str, _numkeys: int, key: str, token: str) -> int:
+    def eval(self, script: str, _numkeys: int, key: str, token: str, *extra) -> int:
+        # We dispatch on the script body rather than parsing Lua: the lock module
+        # only uses two scripts (unlock + pexpire), and matching on a unique
+        # substring keeps the fake honest about which one we're emulating.
         with self._lock:
             entry = self._store.get(key)
-            if entry and entry[0] == token:
-                del self._store[key]
+            if not entry or entry[0] != token:
+                return 0
+            if "PEXPIRE" in script:
+                ttl_ms = int(extra[0])
+                expires_at = time.monotonic() + (ttl_ms / 1000.0)
+                self._store[key] = (token, expires_at)
                 return 1
-            return 0
+            # default: DEL on token match (unlock script).
+            del self._store[key]
+            return 1
 
 
 class SyncExecutor:

@@ -1,6 +1,6 @@
 import uuid
 
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from oohy_product import settings
@@ -259,14 +259,34 @@ class AnalysisJob(models.Model):
         pass
 
     def transition_to(self, new_state: str, **fields) -> "AnalysisJob":
-        if new_state not in self.ALLOWED_TRANSITIONS.get(self.state, set()):
-            raise AnalysisJob.IllegalTransition(
-                f"cannot transition {self.state} -> {new_state}"
+        """Atomically validate and apply a state transition.
+
+        Refetches the row under SELECT FOR UPDATE so that if two paths land on
+        the same job (e.g. a worker and a reclaim handler), the second one sees
+        the first's committed state and raises IllegalTransition instead of
+        silently overwriting it. The in-memory ``self`` is refreshed to the
+        post-write state so callers don't have to.
+        """
+        with transaction.atomic():
+            current = (
+                type(self)
+                ._base_manager.select_for_update()
+                .get(pk=self.pk)
             )
-        self.state = new_state
-        for key, value in fields.items():
-            setattr(self, key, value)
-        self.save(update_fields=["state", "updated_at", *fields.keys()])
+            allowed = type(self).ALLOWED_TRANSITIONS.get(current.state, set())
+            if new_state not in allowed:
+                raise AnalysisJob.IllegalTransition(
+                    f"cannot transition {current.state} -> {new_state}"
+                )
+            current.state = new_state
+            for key, value in fields.items():
+                setattr(current, key, value)
+            current.save(update_fields=["state", "updated_at", *fields.keys()])
+        # Sync in-memory copy so callers continue to see the latest write.
+        self.state = current.state
+        for key in fields.keys():
+            setattr(self, key, getattr(current, key))
+        self.updated_at = current.updated_at
         return self
 
     def __str__(self) -> str:

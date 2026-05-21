@@ -8,8 +8,13 @@ from typing import Callable, Optional
 from django.conf import settings
 
 from bucket_extentions.s3 import fetch_bytes
-from global_utils.distributed_lock import LockAcquireError, lock
+from global_utils.distributed_lock import (
+    LockAcquireError,
+    LockLostError,
+    lock_with_heartbeat,
+)
 from global_utils.event_broker import EventBroker, Message, get_broker
+from global_utils.log_context import bind, install_filter
 from pulse_analysis_algo.api import AnalysisError, run_analysis
 from pulse_service.models import AnalysisJob
 
@@ -48,6 +53,7 @@ class SignalWorker:
         )
 
     def run_forever(self) -> None:
+        install_filter()
         self.loop.install_signal_handlers()
         try:
             self.loop.run_forever()
@@ -62,15 +68,27 @@ class SignalWorker:
             self.broker.ack(message.stream, settings.PULSE_SIGNAL_GROUP, message.message_id)
             return
 
-        lock_key = f"pulse:job:{job_id}:signal"
-        try:
-            with lock(lock_key, ttl_ms=settings.PULSE_LOCK_TTL_MS):
-                self._process(job_id, message)
-        except LockAcquireError:
-            log.info("job %s already locked by another worker — ack and skip", job_id)
-            self.broker.ack(message.stream, settings.PULSE_SIGNAL_GROUP, message.message_id)
+        with bind(job_id=job_id, stage="signal", consumer=self.loop.consumer_name):
+            lock_key = f"pulse:job:{job_id}:signal"
+            try:
+                with lock_with_heartbeat(
+                    lock_key, ttl_ms=settings.PULSE_LOCK_TTL_MS
+                ) as held:
+                    self._process(job_id, message, held)
+            except LockAcquireError:
+                log.info("job %s already locked by another worker — ack and skip", job_id)
+                self.broker.ack(
+                    message.stream, settings.PULSE_SIGNAL_GROUP, message.message_id
+                )
+            except LockLostError:
+                # Heartbeat lost the key mid-process: do NOT ack — let the pending
+                # message be reclaimed by another consumer rather than silently dropping it.
+                log.warning(
+                    "lock for job %s was lost; leaving message pending for reclaim",
+                    job_id,
+                )
 
-    def _process(self, job_id: str, message: Message) -> None:
+    def _process(self, job_id: str, message: Message, held=None) -> None:
         try:
             job = AnalysisJob.objects.get(job_id=job_id)
         except AnalysisJob.DoesNotExist:
@@ -111,6 +129,12 @@ class SignalWorker:
         except Exception as exc:
             self._fail(job, message, code="analysis_crash", msg=repr(exc))
             return
+
+        # If the heartbeat dropped while the algo ran, another worker may now
+        # own the key. Bail without acking or writing state — the broker's
+        # pending-message reclaim path will redeliver this to a healthy worker.
+        if held is not None:
+            held.check()
 
         job.transition_to(
             AnalysisJob.STATE_ANALYSIS_COMPLETE,
